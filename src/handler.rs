@@ -68,7 +68,7 @@ pub fn destroy(repo: &Path, input: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn sync(repo: &Path, _force: bool) -> Result<()> {
+pub fn sync(repo: &Path, force: bool) -> Result<()> {
     let manifest = config::load_manifest(repo)?;
     let mut count = 0;
     for (name, native_path) in &manifest.maps {
@@ -76,12 +76,18 @@ pub fn sync(repo: &Path, _force: bool) -> Result<()> {
         let native_abs = PathBuf::from(shellexpand::tilde(native_path).into_owned());
 
         if native_abs.is_symlink() && fs::read_link(&native_abs).ok() == Some(stored_path.clone()) {
+            println!("{:>10} {} -> {}", "跳过", name, native_path);
             continue;
         }
 
         if native_abs.exists() {
-            if native_abs.is_symlink() { fs::remove_file(&native_abs)?; }
-            else { continue; }
+            if force {
+                if native_abs.is_dir() { fs::remove_dir_all(&native_abs)?; } else { fs::remove_file(&native_abs)?; }
+                println!("{:>10} {} -> {}", "已覆盖", name, native_path);
+            } else {
+                println!("{:>10} {} -> {}", "冲突", name, native_path);
+                continue;
+            }
         }
 
         if let Some(p) = native_abs.parent() { fs::create_dir_all(p)?; }

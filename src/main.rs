@@ -76,9 +76,8 @@ enum Commands {
         locale: PathBuf
     },
 
-    /// 管理仓库 :: 执行预定义指令 [rp]
-    #[command(alias = "rp")]
-    Repo,
+    /// 打开仓库 :: 执行预定义指令
+    Open,
 }
 
 fn main() -> Result<()> {
@@ -104,7 +103,7 @@ fn main() -> Result<()> {
         Commands::Unlink { input } => handler::unlink(repo, &input),
         Commands::Destroy { input } => handler::destroy(repo, &input),
         Commands::Sync { force } => handler::sync(repo, force),
-        Commands::Repo => handler::repo(repo),
+        Commands::Open => handler::open(repo),
         _ => unreachable!(),
     }
 }

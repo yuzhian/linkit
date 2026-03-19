@@ -105,7 +105,7 @@ pub fn init(path: &Path, remote: Option<String>, config: &mut Config) -> Result<
     if let Some(r) = remote {
         Command::new("git").args(["remote", "add", "origin", &r]).current_dir(path).status()?;
     }
-    let default_manifest = "repo_cmd = \"cd {path}\"\n\n[maps]\n";
+    let default_manifest = "open_cmd = \"cd {path}\"\n\n[maps]\n";
     fs::write(path.join("manifest.toml"), default_manifest)?;
     config.repository = Some(fs::canonicalize(path)?);
     crate::config::save_config(config)?;
@@ -130,12 +130,10 @@ pub fn locate(locale: &Path, config: &mut Config) -> Result<()> {
     Ok(())
 }
 
-pub fn repo(repo: &Path) -> Result<()> {
+pub fn open(repo: &Path) -> Result<()> {
     let manifest = config::load_manifest(repo)?;
-    let cmd = manifest.repo_cmd.unwrap_or_else(|| "cd {path}".to_string());
+    let cmd = manifest.open_cmd.unwrap_or_else(|| "cd {path}".to_string());
     let full_cmd = cmd.replace("{path}", repo.to_str().unwrap());
-
-    println!("{:>10} 执行命令 '{}'", "仓库管理", full_cmd);
     Command::new("sh").arg("-c").arg(&full_cmd).status()?;
     Ok(())
 }

@@ -12,7 +12,7 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Manifest {
-    pub repo_cmd: Option<String>,
+    pub open_cmd: Option<String>,
     pub maps: HashMap<String, String>,
 }
 

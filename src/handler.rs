@@ -122,6 +122,14 @@ pub fn clone(remote: &str, locale: Option<PathBuf>, config: &mut Config) -> Resu
     Ok(())
 }
 
+pub fn locate(locale: &Path, config: &mut Config) -> Result<()> {
+    if !locale.exists() { return Err(anyhow::anyhow!("指定路径不存在: {:?}", locale)); }
+    config.repository = Some(fs::canonicalize(locale)?);
+    crate::config::save_config(config)?;
+    println!("{:>10} {:?}", "已关联", locale);
+    Ok(())
+}
+
 pub fn repo(repo: &Path) -> Result<()> {
     let manifest = config::load_manifest(repo)?;
     let cmd = manifest.repo_cmd.unwrap_or_else(|| "cd {path}".to_string());

@@ -69,6 +69,13 @@ enum Commands {
         locale: Option<PathBuf>
     },
 
+    /// 关联仓库 :: 关联一个已存在的仓库
+    Locate {
+        /// 本地仓库位置
+        #[arg(value_name = "位置")]
+        locale: PathBuf
+    },
+
     /// 管理仓库 :: 执行预定义指令 [rp]
     #[command(alias = "rp")]
     Repo,
@@ -84,6 +91,9 @@ fn main() -> Result<()> {
     }
     if let Commands::Clone { remote, locale } = cli.command {
         return handler::clone(&remote, locale, &mut config);
+    }
+    if let Commands::Locate { locale } = cli.command {
+        return handler::locate(&locale, &mut config);
     }
 
     let repo = config.repository.as_ref()

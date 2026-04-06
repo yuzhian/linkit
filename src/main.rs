@@ -19,10 +19,10 @@ enum Commands {
     Link {
         /// 要链接的原始路径 (如 . 或 ~/.zshrc)
         #[arg(value_name = "原始路径")]
-        native_path: String,
+        system_path: String,
         /// 在仓库中存储的自定义名称 (可选)
         #[arg(value_name = "仓库路径")]
-        stored_path: Option<String>
+        stored_key: Option<String>
     },
 
     /// 解除链接 :: 解除链接并将文件移回原位 [u/un]
@@ -33,17 +33,17 @@ enum Commands {
         input: String
     },
 
-    /// 彻底销毁 :: 物理删除仓库原件及链接 [d]
-    #[command(alias = "d")]
-    Destroy {
+    /// 彻底销毁 :: 物理删除仓库原件及链接 [rm]
+    #[command(alias = "rm")]
+    Remove {
         /// 条目名称、逻辑路径或仓库内路径
         #[arg(value_name = "标识")]
         input: String
     },
 
-    /// 同步清单 :: 同步所有清单条目 [s]
-    #[command(alias = "s")]
-    Sync {
+    /// 同步清单 :: 同步所有清单条目 [d]
+    #[command(alias = "d")]
+    Deploy {
         /// 是否强制覆盖已存在的非链接文件
         #[arg(short, long)]
         force: bool
@@ -80,30 +80,36 @@ enum Commands {
     Open,
 }
 
-fn main() -> Result<()> {
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<()> {
     let cli = Cli::parse();
     let mut config = config::load_config()?;
 
-    if let Commands::Init { remote, locale } = cli.command {
-        let path = locale.unwrap_or(std::env::current_dir()?);
-        return handler::init(&path, remote, &mut config);
-    }
-    if let Commands::Clone { remote, locale } = cli.command {
-        return handler::clone(&remote, locale, &mut config);
-    }
-    if let Commands::Locate { locale } = cli.command {
-        return handler::locate(&locale, &mut config);
-    }
-
-    let repo = config.repository.as_ref()
-        .context("未关联仓库。请先执行 'linkit init' 或 'linkit clone'。")?;
-
     match cli.command {
-        Commands::Link { native_path, stored_path } => handler::link(repo, &native_path, stored_path),
-        Commands::Unlink { input } => handler::unlink(repo, &input),
-        Commands::Destroy { input } => handler::destroy(repo, &input),
-        Commands::Sync { force } => handler::sync(repo, force),
-        Commands::Open => handler::open(repo),
-        _ => unreachable!(),
+        Commands::Init { remote, locale } => {
+            let path = locale.unwrap_or(std::env::current_dir()?);
+            handler::init(&path, remote, &mut config)
+        }
+        Commands::Clone { remote, locale } => handler::clone(&remote, locale, &mut config),
+        Commands::Locate { locale } => handler::locate(&locale, &mut config),
+
+        cmd => {
+            let repo = config.repository.as_ref().context("No repository found. Please run 'linkit init' or 'linkit clone' or 'linkit locate' first.")?;
+
+            match cmd {
+                Commands::Link { system_path, stored_key } => handler::link(repo, &system_path, stored_key),
+                Commands::Unlink { input } => handler::unlink(repo, &input),
+                Commands::Remove { input } => handler::remove(repo, &input),
+                Commands::Deploy { force } => handler::deploy(repo, force),
+                Commands::Open => handler::open(repo),
+                _ => unreachable!(),
+            }
+        }
     }
 }

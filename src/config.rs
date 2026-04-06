@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use directories::ProjectDirs;
@@ -13,7 +13,7 @@ pub struct Config {
 #[derive(Serialize, Deserialize, Default)]
 pub struct Manifest {
     pub open_cmd: Option<String>,
-    pub maps: HashMap<String, String>,
+    pub maps: BTreeMap<String, String>,
 }
 
 pub fn get_config_path() -> Result<PathBuf> {

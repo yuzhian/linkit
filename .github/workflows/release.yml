@@ -8,18 +8,22 @@ on:
 
 jobs:
   publish:
-    name: 构建并发布 - ${{ matrix.os }}
+    name: 构建并发布 - ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: linkit
             asset_name: linkit-linux-x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: linkit.exe
+            asset_name: linkit-windows-x86_64.exe
 
     steps:
       - name: 检出代码
@@ -33,10 +37,17 @@ jobs:
       - name: 编译 Release 版本
         run: cargo build --release --locked --target ${{ matrix.target }}
 
-      - name: 准备分发文件
+      - name: 准备分发文件 (Unix)
+        if: runner.os != 'Windows'
         run: |
           mkdir -p assets
           cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} assets/${{ matrix.asset_name }}
+
+      - name: 准备分发文件 (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          if (!(Test-Path assets)) { New-Item -ItemType Directory -Path assets }
+          Copy-Item "target\${{ matrix.target }}\release\${{ matrix.artifact_name }}" -Destination "assets\${{ matrix.asset_name }}"
 
       - name: 发布至 GitHub Release
         uses: softprops/action-gh-release@v2

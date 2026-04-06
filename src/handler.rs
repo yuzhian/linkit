@@ -117,7 +117,7 @@ pub fn init(path: &Path, remote: Option<String>, config: &mut Config) -> Result<
     if let Some(r) = remote {
         Command::new("git").args(["remote", "add", "origin", &r]).current_dir(path).status()?;
     }
-    let default_manifest = "open_cmd = \"cd {path}\"\n\n[maps]\n";
+    let default_manifest = "open_cmd = \"nvim {path}\"\n\n[maps]\n";
     fs::write(path.join("manifest.toml"), default_manifest)?;
     config.repository = Some(dunce::canonicalize(path)?);
     crate::config::save_config(config)?;
@@ -146,11 +146,7 @@ pub fn locate(locale: &Path, config: &mut Config) -> Result<()> {
 
 pub fn open(repo: &Path) -> Result<()> {
     let manifest = config::load_manifest(repo)?;
-    let cmd = manifest.open_cmd.unwrap_or_else(|| {
-        if cfg!(windows) { "start cmd /k \"cd /d {path}\"".to_string() } 
-        else { "cd {path} && $SHELL".to_string() }
-    });
-
+    let cmd = manifest.open_cmd.as_ref().ok_or_else(|| anyhow::anyhow!("'open_cmd' is not set in manifest.toml"))?;
     let full_cmd = cmd.replace("{path}", repo.to_str().unwrap());
 
     if cfg!(windows) {
